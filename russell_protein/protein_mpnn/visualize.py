@@ -1,4 +1,4 @@
-import numpy as np
+import torch
 from Bio.PDB import PDBIO, Structure, Model, Chain, Residue, Atom
 
 def data_to_pdb(data, output_file="output.pdb"):
@@ -33,10 +33,10 @@ def data_to_pdb(data, output_file="output.pdb"):
 
             # Add backbone atoms (N, CA, C, O) if coordinates exist
             for atom_name, atom_coords in coords_dict.items():
+
                 base_atom_name = atom_name.split("_")[0]  # Extract 'N', 'CA', 'C', 'O' from 'N_chain_A'
                 xyz = atom_coords[i]
-
-                if not np.any(np.isnan(xyz)):
+                if not torch.any(torch.isnan(xyz)):
                     atom = Atom.Atom(base_atom_name, atom_coords[i], 1.0, 1.0, " ", base_atom_name, i + 1, element=base_atom_name[0])
                     residue.add(atom)
 
@@ -44,14 +44,15 @@ def data_to_pdb(data, output_file="output.pdb"):
 
         return chain
 
-    # Add chains to the model
-    if 'seq_chain_A' in data and 'coords_chain_A' in data:
-        chain_A = add_chain(data['seq_chain_A'], data['coords_chain_A'], "A")
-        model.add(chain_A)
-
-    if 'seq_chain_B' in data and 'coords_chain_B' in data:
-        chain_B = add_chain(data['seq_chain_B'], data['coords_chain_B'], "B")
-        model.add(chain_B)
+    possible_chains = 'ABCDEFGHIJKLMNOP'
+    for chain_name in possible_chains:
+        if f'seq_chain_{chain_name}' in data and f'coords_chain_{chain_name}' in data:
+            model.add(
+                add_chain(
+                    data[f'seq_chain_{chain_name}'],
+                    data[f'coords_chain_{chain_name}'],
+                    chain_name)
+            )
 
     structure.add(model)
 
