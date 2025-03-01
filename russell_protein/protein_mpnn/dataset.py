@@ -364,7 +364,7 @@ def build_protein_mpnn_input_structure_dict(input_data):
 
         concat_seq += chain_seq
 
-        print(input_data['masked'])
+        #print(input_data['masked'])
         if chain_index in input_data['masked']:
             masked_chain_list.append(chain_id)
         else:

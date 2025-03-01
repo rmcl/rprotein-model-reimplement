@@ -1,3 +1,4 @@
+import py3Dmol
 import torch
 from Bio.PDB import PDBIO, Structure, Model, Chain, Residue, Atom
 
@@ -60,3 +61,76 @@ def data_to_pdb(data, output_file="output.pdb"):
     io = PDBIO()
     io.set_structure(structure)
     io.save(output_file)
+
+
+def get_pdb_from_atom_positions(points):
+    """
+    Converts a NumPy array of atomic positions into a PDB-formatted string.
+
+    Args:
+        points (np.ndarray): A (N, 4, 3) array where:
+            - N = Number of residues
+            - 4 = Atoms per residue (N, CA, C, O)
+            - 3 = Cartesian coordinates (x, z, y)
+
+        TODO: MAKE THIS ALSO SUPPORT 1 atom per residue - Ca atom only
+
+    Returns:
+        str: PDB-formatted string.
+    """
+    atom_names = ["N", "CA", "C", "O"]  # Atoms in a glycine residue
+    pdb_str = ""
+    atom_index = 1  # Atom serial number
+
+    for res_id, residue in enumerate(points, start=1):  # Iterate over residues
+        for atom_id, (x, z, y) in enumerate(residue):  # Iterate over atoms, preserving (x, z, y) order
+            pdb_str += (
+                f"HETATM{atom_index:5d}  {atom_names[atom_id]:<2}  GLY A{res_id:4d}    "
+                f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00 20.00           C  \n"
+            )
+            atom_index += 1  # Increment global atom index
+
+    return pdb_str
+
+
+
+def view_atom_position_tensor(X, residue_colors = None):
+    """Given a (aa len, # atoms, xyz coords) tensor, use py3Dmol to display
+
+    Input:
+        X: (aa len, num atoms per aa, xyz)
+        residue_colors: Dict[residue pos, color string]
+
+    Example:
+        residue_colors = {
+            1: "red",
+            10: "blue",
+            20: "green",
+            30: "purple",
+            40: "orange",
+            50: "pink"
+        }
+
+
+    """
+    pdb_str = get_pdb_from_atom_positions(X)
+
+    # Create 3Dmol viewer
+    view = py3Dmol.view(width=500, height=500)
+    view.addModel(pdb_str, "pdb")
+
+    # Define colors for specific residue numbers
+
+
+    # Default color for all other residues
+    view.setStyle({"cartoon": {"color": "white"}})
+
+    if residue_colors:
+        # Apply different colors to specific residues
+        for res_id, color in residue_colors.items():
+            view.setStyle({"resi": str(res_id)}, {"cartoon": {"color": color}})
+
+
+    #view.setStyle({"cartoon": {"color": "spectrum"}})
+    view.zoomTo()
+    view.show()
